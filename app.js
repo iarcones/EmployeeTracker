@@ -10,15 +10,36 @@ function menu () {
                 type: "list",
                 name: "cmd",
                 message: "what do you want?",
-                choices: [ "add", "view", "update", "delete", "misc" ]
+                choices: [ "add", "view", "update", "delete"]
             },
-
             {
                 type: "list",
                 name: "option",
-                message: "what do you want?",
-                choices: [ "employee", "role", "department" ],
-                // when:{cmd = "misc"}
+                message: "VIEW: what do you want?",
+                choices: [ "employee", "role", "department", "employee by manager"],
+                when: function(answer){
+                    return answer.cmd === "view"
+                 }
+            },
+            {
+                type: "list",
+                name: "option",
+                message: "UPDATE: what do you want?",
+                choices: [ "employee role", "employee manager"],
+                when: function(answer){
+                    return answer.cmd === "update"
+                 }
+            },
+            {
+                type: "list",
+                name: "option",
+                // message: "ADD and DELETE: what do you want?",
+                message: function(answer){
+                    if(answer.cmd==="add"){ return "ADD: what do you want?"} else {return " DELETE: what do you want?"}},
+                choices: [ "employee", "role", "department"],
+                when: function(answer){
+                    return answer.cmd === "delete" || answer.cmd === "add" 
+                 }
             }
 
         ])
@@ -86,6 +107,7 @@ async function addDepartment () {
     menu()
 
 }
+
 async function addRole () {
     const departmentDb = await getDepartment()
     const departmentChoices = departmentDb.map(elem => {
@@ -119,6 +141,7 @@ async function addRole () {
     menu()
 
 }
+
 async function addEmployee () {
     const rolesDB = await getRoles()
     const rolesChoices = rolesDB.map(elem => {
@@ -182,10 +205,61 @@ async function viewRole(){
     console.table(result)
     menu()
 }
+
 async function viewEmployee(){
     const result = await getEmployeesExtended()
     console.table(result)
     menu()
+}
+
+async function updateEmployee () {
+    const rolesDB = await getRoles()
+    const rolesChoices = rolesDB.map(elem => {
+        return {
+            name: elem.title,
+            value: elem.id
+        }
+    })
+    const employeeDB = await getEmployees()
+    const employeeChoices = employeeDB.map(elem => {
+        return {
+            name: elem.first_name + " " + elem.last_name,
+            value: elem.id
+        }
+    })
+ 
+
+
+    const employeeRec = await inquirer
+        .prompt([
+            {
+                type: 'list',
+                name: "manager_id",
+                message: "Manager:",
+                choices: managerChoices
+            },
+            {
+                type: 'input',
+                name: "first_name",
+                message: "First name:",
+            },
+            {
+                type: 'input',
+                name: "last_name",
+                message: "Last name:",
+            },
+            {
+                type: 'list',
+                name: "role_id",
+                message: "Role:",
+                choices: rolesChoices
+            },
+           
+        ])
+
+    result = await insertEmployee(employeeRec)
+    menu()
+
 }
 
 // DB  - connection
@@ -233,5 +307,17 @@ function insertRole (role) {
 }
 
 function insertEmployee (employee) {
+    return connection.query("INSERT INTO employee SET ?", employee);
+}
+
+
+// function updateDepartment (department) {
+//     return connection.query("INSERT INTO department SET ?", department);
+// }
+// function updateRole (role) {
+//     return connection.query("INSERT INTO role SET ?", role);
+// }
+
+function updateEmployee (employee) {
     return connection.query("INSERT INTO employee SET ?", employee);
 }
